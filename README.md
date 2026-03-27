@@ -43,8 +43,6 @@ clustering-municipios-pib/
 ├── analise.ipynb                         # Análise completa
 ├── br_bd_diretorios_brasil_municipio.csv # Tabela de tradução dos ids
 ├── br_ibge_pib_municipio.csv.gz          # Dados do IBGE via Base dos Dados
-├── BR_Municipios_2021.shp                # Shapefile dos municípios (IBGE) (Os outros arquivos são auxiliares)
-├── mapa_clusters.html                    # Mapa interativo gerado
 └── README.md
 ```
 
@@ -139,7 +137,7 @@ O arquivo `mapa_clusters.html` contém um mapa interativo de todos os município
 
 ---
 
-## ▶ Como Reproduzir
+## Como Reproduzir
 
 ### 1. Clone o repositório
 ```bash

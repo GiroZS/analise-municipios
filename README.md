@@ -141,8 +141,8 @@ O arquivo `mapa_clusters.html` contém um mapa interativo de todos os município
 
 ### 1. Clone o repositório
 ```bash
-git clone https://github.com/seu-usuario/clustering-municipios-pib.git
-cd clustering-municipios-pib
+git clone https://github.com/GiroZS/analise-municipios.git
+cd analise-municipios
 ```
 
 ### 2. Instale as dependências
@@ -156,7 +156,7 @@ pip install pandas scikit-learn geopandas folium matplotlib seaborn
 
 ### 4. Execute o notebook
 ```bash
-jupyter notebook notebook.ipynb
+jupyter notebook analise.ipynb
 ```
 
 ---

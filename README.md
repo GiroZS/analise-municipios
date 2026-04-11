@@ -1,22 +1,22 @@
-#  Clustering de Municípios Brasileiros por Perfil Econômico
+# Clustering de Municípios Brasileiros por Perfil Econômico
 
-Análise não-supervisionada dos **5.570 municípios brasileiros** com base na composição setorial do PIB, utilizando K-Means para identificar perfis econômicos distintos.
-
----
-
-##  Contexto
-
-O Brasil é um país de contrastes econômicos profundos. Municípios industriais convivem com pequenas cidades do interior cuja economia depende quase inteiramente do gasto público. Este projeto aplica técnicas de **Machine Learning não-supervisionado** para agrupar automaticamente os municípios por similaridade econômica, revelando padrões que análises tradicionais dificilmente capturam.
-Esse projeto foi feito como estudo das tecnologias e aplicação de análise de dados.
-
-**Fonte dos dados:** [Base dos Dados](https://basedosdados.org) — tabela `br_ibge_pib_municipio`, ano de referência **2021**.
+Análise não-supervisionada dos **5.570 municípios brasileiros** com base na composição setorial do PIB, utilizando K-Means para identificar perfis econômicos distintos e rastrear sua evolução entre 2003 e 2021.
 
 ---
 
-##  Objetivo
+## Contexto
 
-Identificar grupos de municípios com perfis econômicos semelhantes a partir da participação percentual de cada setor no Valor Adicionado Bruto (VAB):
+O Brasil é um país de contrastes econômicos profundos. Municípios industriais convivem com pequenas cidades do interior cuja economia depende quase inteiramente do gasto público. Este projeto aplica técnicas de **Machine Learning não-supervisionado** para agrupar automaticamente os municípios por similaridade econômica, revelando padrões que análises tradicionais dificilmente capturam. Foi desenvolvido como estudo de análise de dados e clustering aplicado a dados reais de escala nacional.
 
+**Fonte dos dados:** [Base dos Dados](https://basedosdados.org/dataset/fcf025ca-8b19-4131-8e2d-5ddb12492347?table=fbbbe77e-d234-4113-8af5-98724a956943) — tabela `br_ibge_pib_municipio`, anos de referência **2003 a 2021**.
+
+---
+
+## Objetivo
+
+Identificar grupos de municípios com perfis econômicos semelhantes a partir da participação percentual de cada setor no Valor Adicionado Bruto (VAB), e analisar como esses grupos evoluem ao longo do tempo.
+
+Os quatro setores utilizados como features:
 - Agropecuária
 - Indústria
 - Serviços
@@ -24,7 +24,7 @@ Identificar grupos de municípios com perfis econômicos semelhantes a partir da
 
 ---
 
-##  Tecnologias
+## Tecnologias
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
 ![Pandas](https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white)
@@ -35,27 +35,30 @@ Identificar grupos de municípios com perfis econômicos semelhantes a partir da
 
 ---
 
-##  Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
-clustering-municipios-pib/
+analise-municipios/
 │
 ├── analise.ipynb                         # Análise completa
 ├── br_bd_diretorios_brasil_municipio.csv # Tabela de tradução dos ids
 ├── br_ibge_pib_municipio.csv.gz          # Dados do IBGE via Base dos Dados
+├── ipea_idh.csv                          # IDH de cada município (2010)
 └── README.md
 ```
 
 ---
 
-##  Metodologia
+## Metodologia
 
 ### 1. Pré-processamento
+
 - Carregamento do CSV comprimido diretamente com `pandas`
-- Criação de **features percentuais** (participação de cada setor no PIB total) para eliminar o efeito do tamanho do município
-- Remoção de valores nulos
+- Criação de **features percentuais**: cada setor foi calculado como `VAB_setor / (VAB_agro + VAB_industria + VAB_servicos + VAB_adespss)`, eliminando o efeito do tamanho do município e evitando distorções causadas pelos impostos líquidos sobre produtos, que fazem o PIB oficial divergir da soma dos VABs setoriais
+- Remoção de valores nulos e exclusão de municípios com dados estruturalmente inconsistentes identificados via inspeção manual
 
 ### 2. Seleção de features
+
 ```python
 features = [
     "pct_va_agropecuaria",
@@ -66,42 +69,60 @@ features = [
 ```
 
 ### 3. Normalização
+
 Aplicação de `StandardScaler` para garantir que nenhuma variável domine as distâncias do algoritmo.
 
 ### 4. Definição do número de clusters
+
 O valor **K=4** foi escolhido combinando dois critérios:
 - **Método do Cotovelo** — identificação do ponto de inflexão da inércia
 - **Silhouette Score** — maximização da coesão interna dos clusters
 
-### 5. Clustering
-Aplicação de **K-Means** com K=4 sobre os dados normalizados.
+### 5. Clustering estático (2021)
 
-### 6. Visualização
+Aplicação de **K-Means** com K=4 sobre os dados normalizados do ano de referência.
+
+### 6. Clustering temporal (2003–2021)
+
+O K-Means foi aplicado independentemente para cada ano. Como os labels dos clusters são arbitrários a cada execução, foi aplicado um **alinhamento de centroides** entre anos usando o algoritmo húngaro (`scipy.optimize.linear_sum_assignment`), garantindo que o mesmo label represente o mesmo perfil econômico ao longo de toda a série.
+
+
+### 7. Visualização
+
 - **PCA** (2 componentes) para visualização 2D dos clusters
 - **Mapa interativo** com Folium e shapefile do IBGE
+- **Heatmaps** de distribuição por UF ao longo dos anos
 
 ---
 
-##  Resultados
+## Resultados
 
-### Perfil médio por cluster
+### Perfil dos clusters (ano base: 2003)
 
-| Cluster | % Agro | % Indústria | % Serviços | % Adm. Pública | PIB Mediano | Nº Municípios |
-|---------|--------|-------------|------------|----------------|-------------|---------------|
-| 0  Polos Industriais | 9,3% | 43,0% | 24,3% | 13,3% | R$ 789k | 669 |
-| 1  Dependentes do Governo | 15,6% | 5,5% | 25,0% | 48,8% | R$ 108k | 1.783 |
-| 2  Rurais / Agrícolas | 46,3% | 6,7% | 21,7% | 20,0% | R$ 221k | 1.587 |
-| 3  Urbano-Serviços | 11,6% | 14,2% | 43,1% | 20,2% | R$ 703k | 1.530 |
+| Cluster | Perfil dominante | Característica principal |
+|---|---|---|
+| Agropecuário | Alto VAB agrícola | Típico do Centro-Oeste e interior do Sul |
+| Industrial | Alto VAB industrial | Concentrado no Sul e Sudeste |
+| Urbano-Serviços | Alto VAB de serviços privados | Capitais e cidades médias desenvolvidas |
+| Dependente do Governo | Alto VAB de administração pública | Interior do Norte e Nordeste |
 
-### Interpretação dos clusters
+### Cruzamento com IDH (IPEA, 2010)
 
-- ** Cluster 0 — Polos Industriais:** Menor grupo em número de municípios, mas com o maior PIB mediano. Reflete a concentração industrial nas regiões Sul e Sudeste.
+| Cluster | IDHM médio | IDHM mediano |
+|---|---|---|
+| Industrial | 0,705 | 0,713 |
+| Urbano-Serviços | 0,712 | 0,719 |
+| Agropecuário | 0,671 | 0,682 |
+| Dependente do Governo | 0,595 | 0,592 |
 
-- ** Cluster 1 — Dependentes do Governo:** O maior cluster do Brasil, com quase 1.800 municípios cuja economia depende majoritariamente do gasto público. PIB mediano 7x menor que os polos industriais — sinal de alta vulnerabilidade fiscal e baixa diversificação econômica.
+O cluster Dependente do Governo apresenta IDHM médio significativamente inferior aos demais, reforçando a relação entre dependência do gasto público e baixo desenvolvimento humano.
 
-- ** Cluster 2 — Rurais/Agrícolas:** Agropecuária responde por quase metade do VAB. Típico de municípios do Centro-Oeste e interior do Sul.
+### Tendências regionais (2003–2021)
 
-- ** Cluster 3 — Urbano-Serviços:** Economia orientada a serviços privados, comércio e serviços financeiros. Inclui capitais e cidades médias desenvolvidas.
+- **Rondônia:** migração quase completa do perfil de serviços para agropecuário ao longo das duas décadas, refletindo a expansão do agronegócio no estado
+- **Tocantins:** virada acentuada entre 2019 e 2021, com crescimento expressivo do cluster agropecuário, possivelmente relacionado à expansão do MATOPIBA
+- **Espírito Santo:** crescimento do perfil industrial entre 2003 e 2017, com provável influência do pré-sal e do setor industrial do estado
+- **Distrito Federal:** 100% no cluster Urbano-Serviços em todos os anos, resultado esperado dado que o DF não possui municípios rurais nem base industrial relevante
 
 ### Análise dos componentes principais (PCA)
 
@@ -112,7 +133,7 @@ Aplicação de **K-Means** com K=4 sobre os dados normalizados.
 
 ---
 
-##  Mapa Interativo
+## Mapa Interativo
 
 O arquivo `mapa_clusters.html` contém um mapa interativo de todos os municípios brasileiros coloridos por cluster. Passe o mouse sobre qualquer município para ver seu nome e cluster.
 
@@ -120,48 +141,36 @@ O arquivo `mapa_clusters.html` contém um mapa interativo de todos os município
 
 ---
 
-##  Limitações
+## Limitações
 
-- A análise usa dados de **um único ano (2021)** — não é possível inferir tendências temporais
-- **Tamanho populacional** não foi incluído nas features, portanto municípios de portes muito diferentes podem estar no mesmo cluster
-- K-Means assume **clusters de formato esférico** — algoritmos como DBSCAN ou Gaussian Mixture poderiam capturar estruturas mais complexas
-
----
-
-##  Próximos Passos
-
-- [ ] Análise temporal: verificar se municípios migram de cluster entre 2010 e 2021
-- [ ] Cruzar com dados de IDH (Atlas Brasil/PNUD) para avaliar se perfil econômico prediz bem-estar social
-- [ ] Testar algoritmos alternativos: DBSCAN, Hierarchical Clustering
-- [ ] Adicionar dados populacionais para calcular PIB per capita por cluster
+- A feature de tamanho populacional não foi incluída no clustering, portanto municípios de portes muito diferentes podem pertencer ao mesmo grupo
+- O cruzamento com IDH está limitado ao ano de 2010, único disponível com cobertura municipal pelo IPEA
+- K-Means assume clusters de formato esférico e impõe uma partição sobre dados que não possuem separação natural bem definida
+- Dois municípios foram excluídos nos anos de 2013 e 2014 por apresentarem dados inconsistentes na base do IBGE
 
 ---
 
 ## Como Reproduzir
 
-### 1. Clone o repositório
 ```bash
 git clone https://github.com/GiroZS/analise-municipios.git
 cd analise-municipios
-```
-
-### 2. Instale as dependências
-```bash
-pip install pandas scikit-learn geopandas folium matplotlib seaborn
-```
-
-### 3. Baixe os dados
-- **PIB Municipal:** [Base dos Dados](https://basedosdados.org) → `br_ibge_pib_municipio`
-- **Shapefile:** [IBGE](https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2021/Brasil/BR/)
-
-### 4. Execute o notebook
-```bash
+pip install pandas scikit-learn geopandas folium matplotlib seaborn scipy
 jupyter notebook analise.ipynb
 ```
 
+**Dados necessários:**
+- PIB Municipal: [Base dos Dados](https://basedosdados.org/dataset/fcf025ca-8b19-4131-8e2d-5ddb12492347?table=fbbbe77e-d234-4113-8af5-98724a956943) → `br_ibge_pib_municipio`
+- Shapefile: [IBGE — Malhas Territoriais 2021](https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2021/Brasil/BR/)
+
 ---
 
-##  Fonte dos Dados
+## Próximos passos
 
-- **PIB Municipal:** IBGE, via [Base dos Dados](https://basedosdados.org)
+- [] Aumentar o valor de k para descobrir subgrupos econômicos dentro dos clusters
+
+## Fonte dos Dados
+
+- **PIB Municipal:** IBGE, via [Base dos Dados](https://basedosdados.org/dataset/fcf025ca-8b19-4131-8e2d-5ddb12492347?table=fbbbe77e-d234-4113-8af5-98724a956943)
 - **Malha Municipal:** IBGE — [Malhas Territoriais 2021](https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/)
+- **IDH Municipal:** [IPEA](https://ipeadata.gov.br/Default.aspx) Instituto de Pesquisa Econômica Aplicada
